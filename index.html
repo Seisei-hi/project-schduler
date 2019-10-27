@@ -1,0 +1,223 @@
+<!doctype html>
+<html>
+
+<head>
+    <title>Learning-Web</title>
+    <meta charset='utf-8'>
+    <style>
+        a{
+            color: aliceblue;}
+        img {
+            object-fit: cover;
+            width: 100%;
+            height: 100%;}
+        button{
+            cursor: pointer;
+            border: none;}
+        html {
+            font-size: 16px;
+            margin: 0;
+            height: 100%;
+            color: rgb(30, 30, 30);  
+            background: whitesmoke}
+        body {
+            margin: 0;
+            height: 100%;}
+        *{
+            -webkit-touch-callout: none;
+            user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            -webkit-user-select: none;}
+        *:focus {
+            outline: none;}
+        .flex-container {
+            display: flex;}
+        .flex-column{
+            flex-direction: column;}
+        .flex-row{
+            flex-direction: row;}
+        .hide{
+            display: none;
+            opacity: 0;
+            overflow: hidden;
+            height: 0;
+            width: 0;
+            margin: 0;
+            z-index: -10;}
+        .box-edge{
+            box-shadow: rgba(0, 0, 0, 0.5) 0px 0px 0.3rem;}
+        .box-center{
+            margin: auto;}
+        .text-input[contenteditable=true]:empty:before{
+            content: attr(placeholder);
+            color:dimgray;
+            cursor:text;}
+        .text-input:focus{
+            background-color: rgb(230, 230, 230);}
+        .dim{
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 100%; height: 100%; 
+            background: rgba(0, 0, 0, 0.3);}
+        .post{
+            width: 20rem;
+            transition-duration: 1s;
+            transition-timing-function: cubic-bezier(0, 0, 0.2, 1);}
+        .post-content > *{
+            width:100%;}
+        .post-img-container{
+            display: inline-block;
+            max-height: 20rem;
+            width: 100%;
+            overflow:auto;}
+        .post-img-container::-webkit-scrollbar {
+            display: none;}
+        .post-content .post-title {
+            font-weight: bold;
+            font-size: 2rem;
+            padding: 2%;}
+        .post-content .post-due {
+            font-size: 1.2rem;}
+        .post-detail-container .post-detail{
+            width: 100%; 
+            padding: 1rem; 
+            box-sizing: border-box; 
+            background-color: whitesmoke;}
+        #postgrid{
+            position: relative;
+            width:0;
+            height: 0;}
+        .circle-slider{
+            position: relative;
+            width: 100%;
+            padding-bottom: 100%;}
+        .circle-slider .circle-slider-setting{
+            position: relative;
+            top: 50%; left: 50%;
+            transform: translate(-50%,-50%);}
+        .circle-slider .circle-slider-circle{
+            position: absolute; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%,-50%); 
+            border-radius: 100%; }
+        .circle-slider .circle-slider-bar{
+            position: absolute; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%,-50%) rotate(0deg); 
+            height: 100%;
+            transition: none;}
+        .circle-slider .circle-slider-handle{
+            position :relative;
+            padding-top: 100%; width: 1rem; }
+        .circle-slider .circle-slider-ampm{
+            position: absolute; 
+            top: 50%; left: 50%; 
+            transform: translate(-50%,-50%) rotate(0deg); }
+        .circle-slider-ampm .circle-slider-ampm-radio{  
+            display: inline-block;
+            font-size:large;
+            padding: 0.2rem 0.5rem;}
+        .clock-bar{
+            position: absolute; 
+            top: 50%; left: 50%; 
+            width:65%; height: 0.2rem;}
+        .clock-bar > *{
+            position: relative;
+            width: 5%; height: 100%;}
+    </style>
+</head>
+<body>
+    <button style="position: fixed; right: 0; width: 10rem; height: 3rem;" 
+        onclick=" let elements =this.parentElement.children;
+        for (let i = 1; i < elements.length; i++) {
+            if(!elements[i].classList.contains(`hide`)){
+                elements[i].classList.add(`hide`);
+                let nextIndex = elements.length == i+1 ? 1 : i+1;
+                elements[nextIndex].classList.remove(`hide`);
+                break;
+            }
+        }">Change</button>
+    
+    <div class="flex-row flex-container" style="width:100%; height: 100%;">
+        <div style="width: 30rem; height: 100%;">
+            <button onclick="document.getElementById(`post-form`).parentElement.classList.remove(`hide`)">+</button>
+        </div>
+        <div style="width:100%; height: 100%; overflow: hidden;">
+            <div id="postgrid" style="transform: scale(1); top: 0px; left: 0px; overflow:unset;">
+            </div> 
+        </div>
+    </div>
+    <div class="hide">
+        <div>
+            <div class="dim" onclick="this.parentElement.parentElement.classList.add(`hide`);"></div>
+        </div>
+        <div id="post-form" class="flex-container flex-row" style="position: absolute; width: 52rem; justify-content: space-around; top: 3rem; left: 50%; transform: translate(-50%,0);">
+            <div style="position: relative; ">
+                <div class="post flex-container flex-column box-edge" style="background-color: whitesmoke;">
+                    <div class="post-content flex-container flex-row" style="flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <div class="post-img-container">
+                                <img id="preview-img" class="post-img" draggable="false">
+                            </div>
+                        </div>
+                        <div>
+                            <input accept="image/*" id="image-input" type="file" oninput="imagePreview(this);">
+                            <div id="title-input" class="post-title text-input" placeholder="New Schedule" contenteditable="true"></div>
+                            <div style="font-size: 0.8rem; padding: 2%;">
+                                Deadline : <span id="due-input" class="post-due text-input" placeholder="yyyy-mm-dd" contenteditable="true"></span>
+                            </div>
+                            <button style="width: 100%; font-weight: bolder;" onclick="writePostJson(); document.getElementById(`post-form`).parentElement.classList.add(`hide`);">MAKE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="width: 30rem;">
+                <div class="post-detail-container">
+                    <div>
+                        <div class="post-detail box-edge">
+                            <div style="font-weight: bold; font-size: 1.2rem;">
+                                Detail
+                            </div>
+                            <div id="detail-input" class="text-input" style="min-height: 4rem;" placeholder="Text here" contenteditable="true"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="hide" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.315);">
+        <div class="flex-container flex-row" style="position: relative; width: 55rem; justify-content: space-around; top: 3rem; left: 50%; transform: translate(-50%,0);">
+            <div style="position: relative; top: 7rem;">
+                <div class="post flex-container flex-column">
+                    <div class="post-content flex-container flex-row" style="flex-wrap: wrap;">
+                        <div style="text-align: center;">
+                            <div class="post-img-container">
+                                <img id="preview-img" class="post-img" src="LightHill.png" draggable="false">
+                            </div>
+                        </div>
+                        <div class="box-edge" style="background-color: whitesmoke;">>
+                            <div class="post-title"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="width: 30rem;">
+                <div class="box-edge" style="width: 100%; padding: 1rem; box-sizing: border-box; background-color: whitesmoke; ">
+                    <div style="font-weight: bold; font-size: 1.2rem;">
+                        Detail
+                    </div>
+                    <div>
+                        
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript" src="renderer.js"> </script>
+<script type="text/javascript" src="funcs.js"></script>
+<script type="text/javascript" src="postgrid.js"></script>
+</html> 
+
