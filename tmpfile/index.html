@@ -8,68 +8,82 @@
 </head>
 
 <body>
-    <div id="main-view">
-        <div class="flex-container flex-row" style="overflow: auto; height: 99%;">
-            <div>
-                <div class="card-sorter box-edge">
-                    <div class="card-sorter-title">
-                        Important
-                    </div>
-                    <div id="imp-card-container" class="sort-card-container">
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div class="card-sorter box-edge">
-                    <div class="card-sorter-title">
-                        Next Progress
-                    </div>
-                    <div id="next-card-container" class="sort-card-container">
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div class="card-sorter box-edge">
-                    <div class="card-sorter-title">
-                        Work in Progress
-                    </div>
-                    <div id="work-card-container" class="sort-card-container">
+    <div style="height: 100%">
+        <button style="position: fixed; right: 0; width: 10rem; height: 3rem;" 
+        onclick=" let elements =this.parentElement.children;
+        for (let i = 1; i < elements.length; i++) {
+            if(!elements[i].classList.contains(`hide`)){
+                elements[i].classList.add(`hide`);
+                let nextIndex = elements.length == i+1 ? 1 : i+1;
+                elements[nextIndex].classList.remove(`hide`);
+                break;
+            }
+        }">Change</button>
+        <div id="main-view" class="hide">
+            <div class="flex-container flex-row" style="overflow: auto; height: 99%;">
+                <div>
+                    <div class="card-sorter box-edge">
+                        <div class="card-sorter-title">
+                            Important
+                        </div>
+                        <div id="imp-card-container" class="sort-card-container">
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div>
-                <div class="card-sorter box-edge">
-                    <div class="card-sorter-title">
-                        Completed this week
-                    </div>
-                    <div id="comp-card-container" class="sort-card-container">
-                    </div>
-                </div>
-            </div>
-            <div>
-                <div class="card-sorter box-edge">
-                    <div class="card-sorter-title">
-                        Stopped
-                    </div>
-                    <div id="stop-card-container" class="sort-card-container">
+                <div>
+                    <div class="card-sorter box-edge">
+                        <div class="card-sorter-title">
+                            Next Progress
+                        </div>
+                        <div id="next-card-container" class="sort-card-container">
+                        </div>
                     </div>
                 </div>
+                <div>
+                    <div class="card-sorter box-edge">
+                        <div class="card-sorter-title">
+                            Work in Progress
+                        </div>
+                        <div id="work-card-container" class="sort-card-container">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="card-sorter box-edge">
+                        <div class="card-sorter-title">
+                            Completed this week
+                        </div>
+                        <div id="comp-card-container" class="sort-card-container">
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="card-sorter box-edge">
+                        <div class="card-sorter-title">
+                            Stopped
+                        </div>
+                        <div id="stop-card-container" class="sort-card-container">
+                        </div>
+                    </div>
+                </div>
+                
             </div>
-            
         </div>
-    </div>
-    <div id="card-view">
-        <button style="width: 3rem; height: 3rem; display: block; font-weight:900; font-size: 2rem;" onclick="setAllCardDraggable()">~</button>
-        <div>
-            <span id="card-dir"><span>main</span></span>
-            <button onclick="addCardLayout()">
-                Add Card
-            </button>   
-            <button onclick="quitDetail()">Quit</button>
-        </div>
-        <div>
-            <div id="card-container">
+        <div id="card-view">
+            <div style="height: 4rem;">
+                <span id="card-dir"><span>main</span></span>
+                <button onclick="addCardLayout()">
+                    Add Card
+                </button>   
+                <button onclick="quitDetail()">
+                    Quit
+                </button>
+                <button style="width: 3rem; height: 3rem; font-weight:900; font-size: 2rem;" onclick=" if(thisCardPath != 'main'){ start = !start;} setAllCardDraggable(start);">~</button>
+            </div>
+            <div style="height: calc(100% - 4rem);">
+                <div id="card-container">
 
+                </div>
             </div>
         </div>
     </div>

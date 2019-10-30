@@ -1,5 +1,6 @@
 
 var cardContainer = document.getElementById(`card-container`);
+var sortCardContainer = document.getElementsByClassName(`sort-card-container`);
 var cardPathElement = document.getElementById(`card-dir`);
 var thisCardPath = "main";
 var sortPaths = [];
@@ -46,14 +47,102 @@ function writeTime(date, serialNumber){
     fs.writeFile(`card_info/time.txt`,timeFile);
     }
 }
+function readFlag(serail){
+    let flagFile = fs.readFileSync(`card_info/flag.txt`,"utf-8");
+    let serialIndex = flagFile.indexOf(`[${serail}]`);
+    let flag="";
+    if(serialIndex == -1){
+        return "";
+    }
+    for (let i = serialIndex+1; i < flagFile.length; i++) {
+        if (flagFile[i] == "]") {
+            flag = flagFile[i+1];
+        }
+    }
+    return flag;
+}
+function writeFlag(flagNumber,serial){
+    let flagFile = fs.readFileSync(`card_info/flag.txt`,"utf-8");
+    let serialIndex = flagFile.indexOf(`[${serial}]`);
+    if(serialIndex == -1){
+        fs.appendFileSync(`card_info/flag.txt`,`[${serial}]${flagNumber}`)
+    }
+    else{
+        let oldTime="[";
+        for (let i = serialIndex+1; i < flagFile.length; i++) {
+            if (flagFile[i] == "[") {
+                break;
+            }
+            oldTime += flagFile[i];
+        }
+    flagFile.replace(oldTime,`[${serial}]${flagNumber}`)
+    fs.writeFile(`card_info/flag.txt`,flagFile);
+    }
+}
 ///////////////
+var mainOrder;
+function mergeAllOrder(cardSerail){
+    mainOrder = fs.readFileSync("main/"+cardSerail+"/order.txt","utf-8");
+    let cardPaths = fs.readdirSync("main/"+cardSerail);
+    for (let i = 0; i < cardPaths.length; i++) {
+        if (cardPaths[i].split(".").length == 1) {
+            mergeOrder("main/"+cardSerail+"/"+cardPaths[i]);
+        }
+    }
+    return mainOrder;
+}
+function mergeOrder(cardPath){
+    mainOrder += fs.readFileSync(cardPath+"/order.txt","utf-8");
+    let cardPaths = fs.readdirSync(cardPath);
+    for (let i = 0; i < cardPaths.length; i++) {
+        if (cardPaths[i].split(".").length == 1) {
+            mergeOrder(cardPath+"/"+cardPaths[i]);
+        }
+    }
+}
+function applyOrderOnMain(serail){
+    let order = mergeAllOrder(serail);
+    order = order.split("-");
+    for (let i = 0; i < order.length; i++) {
+        findFileNameOnMain(order[i]);
+        sortCardContainer[readFlag(order[i])].appendChild(makeCardElement(foundFilename));
+    }
+}
+var foundFilename;
+var isFound;
+function findFileNameOnMain(filename){
+    isFound = false;
+    let cardPaths = fs.readdirSync("main");
+    for (let i = 0; i < cardPaths.length && !isFound; i++) {
+        if (filename == cardPaths[i]) {
+            isFound = true;
+            foundFilename = cardPaths[i];
+        }
+        else if (cardPaths[i].split(".").length == 1) {
+            findFileName("main/"+cardPaths[i],filename);
+        }
+    }
+    return isFound ? foundFilename : false;
+}
+function findFileName(cardPath,filename){
+    let cardPaths = fs.readdirSync(cardPath);
+    for (let i = 0; i < cardPaths.length && !isFound; i++) {
+        if (filename == cardPaths[i]) {
+            isFound = true;
+            foundFilename = cardPath+"/"+cardPaths[i];
+        }
+        else if (cardPaths[i].split(".").length == 1) {
+            findFileName(cardPath+"/"+cardPaths[i],filename);
+        }
+    }
+}
 ///////////////
 function addCardLayout(){
     let card = document.createElement(`div`);
     card.className="card box-edge";
     card.style.order = 100;
     card.innerHTML +=`
-        <div class="card-label"></div>
+        <div class="card-flag"></div>
         <div class="card-text" contenteditable="true" placeholder="Text here"></div>
         <div class="card-time" contenteditable="true" placeholder="y-m-d"></div>
         <div class="card-detail"></div>
@@ -61,7 +150,7 @@ function addCardLayout(){
             <button onclick="addCard(this.parentElement.parentElement);">
                 Apply
             </button>
-            <button onclick="this.parentElement.parentElement.parentElement.removeChild(this.parentElement.parentElement)">
+            <button onclick="this.parentElement.parentElement.parentElement.removeChild(this.parentElement.parentElement); if(cardContainer.children.length ==0){quitDetail();}">
                 Cancle
             </button>
         </div>`;
@@ -69,21 +158,23 @@ function addCardLayout(){
 }
 function addCard(oldCard){
     let text = oldCard.children[1].innerText;
-    fs.writeFileSync(`${thisCardPath}/${countSerial()}.txt`,text);
     let time = oldCard.children[2].innerText;
-    if (time != "") {
-        time = time.split("-");
-        if(time.length != 3){
-            throw "y-m-d";
-        }   
-        writeTime(new Date(time[0],time[1]-1,time[2]).getTime(), lastSerialNumber);
+    time = time.split("-");
+    if(time.length != 3){
+        throw "y-m-d";
     }
-    
+    else if(time[0].length!=4){
+        throw "";
+    }
+    if((text == '' || text == null || text.replace(/^\s+|\s+$/g, '' ) == "" )){throw 0;}
+    fs.writeFileSync(`${thisCardPath}/${countSerial()}.txt`,text);
+    writeTime(new Date(time[0],time[1]-1,time[2]).getTime(), lastSerialNumber);
+
     let newCard = document.createElement(`div`);
     newCard.id = lastSerialNumber;
-    newCard.className="card box-edge";
+    newCard.className="card box-edge moveable";
     newCard.innerHTML +=`
-        <div class="card-label"></div>
+        <div class="card-flag"></div>
         <div class="card-text">${text}</div>
         <div class="card-time">${readTime(lastSerialNumber)}</div>
         <div class="card-detail"></div>
@@ -95,13 +186,14 @@ function addCard(oldCard){
     fs.appendFileSync(thisCardPath+"/order.txt",lastSerialNumber+"-");
     cardContainer.insertBefore(newCard, oldCard);
     cardContainer.removeChild(oldCard);   
+    setCardDragAndDrop(newCard);
     sortOrder(thisCardPath+"/order.txt");
 }
 function makeCardDetail(cardPath){
     let cardSerial = cardPath.substring(cardPath.lastIndexOf("/")+1,cardPath.length);
     fs.mkdirSync(cardPath);
     fs.renameSync(`${cardPath}.txt`,`${cardPath}/${cardSerial}.txt`);
-    fs.writeFileSync(`${cardPath}/order.txt`,cardSerial);
+    fs.writeFileSync(`${cardPath}/order.txt`,"");
     loadCardDetail(cardPath);
 }
 function loadCardDetail(cardPath = "main", quit = false){
@@ -133,6 +225,9 @@ function loadCardDetail(cardPath = "main", quit = false){
         sortOrder(sortPaths[i]);
     }
     sortPaths =[];
+    if (cardContainer.children.length == 0) {
+        addCardLayout();
+    }
 }
 function makeTextCardElement(cardPath){
     let isDir = fs.lstatSync(cardPath).isDirectory();
@@ -144,7 +239,7 @@ function makeTextCardElement(cardPath){
     card.id = isDir ? filename : filename.substring(0,filename.lastIndexOf("."));
     card.className=`card box-edge`;
         card.innerHTML +=
-        `<div class="card-label"></div>
+        `<div class="card-flag"></div>
         <div class="card-text">${text}</div>
         <div class="card-time">${readTime(card.id)}</div>`;
     return card;
@@ -159,13 +254,13 @@ function makeCardElement(cardPath){
     card.id = isDir ? filename : filename.substring(0,filename.lastIndexOf("."));
     card.className=`card box-edge moveable`;
         card.innerHTML +=`
-        <div class="card-label"></div>
+        <div class="card-flag"></div>
         <div class="card-text ${isDir ? "dir":""}">${text}</div>
         <div class="card-time">${readTime(card.id)}</div>
         <div class="card-detail"></div>
         <div class="card-button">
             <button onclick="${isDir ? "load":"make"}CardDetail(thisCardPath+'/'+this.parentElement.parentElement.id)">
-                ${isDir ? "show Detail":"+ Detail"}
+                + Detail
             </button>
         </div>`;
     setCardDragAndDrop(card);
@@ -201,13 +296,13 @@ function quitDetail(){
 }
 function sortOrder(cardPath){
     let order = fs.readFileSync(cardPath,"utf-8").split("-");
-    if (order.length != 1){
+    console.log(order);
+    if (order.length != 2){
         for (let i = 0; i < order.length-1; i++) {
             document.getElementById(order[i]).style.order = i+1;
         }
     }
 }
-
 function setCardDragAndDrop(card) {
     var state = false; 
     card.addEventListener("mousedown",(event)=>{
@@ -231,12 +326,17 @@ function setCardDragAndDrop(card) {
         }
     });
 }
-
 var start = false;
-function setAllCardDraggable(){
+function setAllCardDraggable(startValue){
     if (thisCardPath != "main") {
+
+        if (startValue) {
+            cardContainer.parentElement.parentElement.classList.add("editing");
+        }else{
+            cardContainer.parentElement.parentElement.classList.remove("editing");
+        }
         let cards = document.getElementsByClassName("moveable");
-        start = !start;
+        start = startValue;
         if (start) {
             for (let i = 0; i < cards.length; i++) {
                 cards[i].style.left ="0px";
@@ -278,5 +378,5 @@ function deleteFolderRecursive(dirPath){
     });
     fs.rmdirSync(dirPath);
   }
-};
+}
 loadCardDetail();
