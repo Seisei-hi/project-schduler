@@ -1,4 +1,16 @@
-
+if (!fs.existsSync("main")) {
+    fs.mkdirSync("main");
+}
+if (!fs.existsSync("card_info")) {
+    fs.mkdirSync("card_info");
+    fs.writeFileSync("card_info/count.txt","0");
+    fs.writeFileSync("card_info/flag.txt","");
+    fs.writeFileSync("card_info/time.txt","");
+}
+if (!fs.existsSync("card_img")) {
+    fs.mkdirSync("card_img");
+}
+var cardView = document.getElementById(`card-view`);
 var cardContainer = document.getElementById(`card-container`);
 var sortCardContainer = document.getElementsByClassName(`sort-card-container`);
 var cardPathElement = document.getElementById(`card-dir`);
@@ -79,6 +91,22 @@ function writeFlag(flagNumber,serial){
     fs.writeFile(`card_info/flag.txt`,flagFile);
     }
 }
+function previewImg(inputElement, imgElement){
+    var reader = new FileReader();
+    reader.onload = function (event) {
+        imgElement.parentElement.children[1].className="hide";
+        imgElement.src = event.target.result;
+        imgElement.alt = inputElement.files[0].name.split('.').pop().toLowerCase();
+        
+    }
+    if (inputElement.files[0]) {
+        reader.readAsDataURL(inputElement.files[0]);
+    }
+    else{
+        imgElement.src = "resource/none.png";
+    }
+    
+}
 ///////////////
 var mainOrder;
 function mergeAllOrder(cardSerail){
@@ -143,8 +171,13 @@ function addCardLayout(){
     card.style.order = 100;
     card.innerHTML +=`
         <div class="card-flag"></div>
+        <div class="card-img" style="min-height:3rem" onclick="this.children[2].click()">
+            <img src="resource/none.png" draggable="false">
+            <div></div>
+            <input accept="image/*" type="file" class="hide" oninput="previewImg(this,this.parentElement.children[0])">
+        </div>
         <div class="card-text" contenteditable="true" placeholder="Text here"></div>
-        <div class="card-time" contenteditable="true" placeholder="y-m-d"></div>
+        <div class="card-time"></div>
         <div class="card-detail"></div>
         <div class="card-button">
             <button onclick="addCard(this.parentElement.parentElement);">
@@ -157,27 +190,32 @@ function addCardLayout(){
     cardContainer.appendChild(card);
 }
 function addCard(oldCard){
-    let text = oldCard.children[1].innerText;
-    let time = oldCard.children[2].innerText;
-    time = time.split("-");
-    if(time.length != 3){
-        throw "y-m-d";
-    }
-    else if(time[0].length!=4){
-        throw "";
-    }
+    let img = oldCard.children[1].children[2].files[0];
+    let text = oldCard.children[2].innerText;
+    let reader;
+    
     if((text == '' || text == null || text.replace(/^\s+|\s+$/g, '' ) == "" )){throw 0;}
     fs.writeFileSync(`${thisCardPath}/${countSerial()}.txt`,text);
-    writeTime(new Date(time[0],time[1]-1,time[2]).getTime(), lastSerialNumber);
+    if (img.name != "resource/none.png" && img) {
+        reader = new FileReader();
+        reader.onload = (event) =>{
+            let extention = img.name.split('.').pop().toLowerCase();
+            fs.writeFileSync(`card_img/${lastSerialNumber}.${extention}`,event.target.result, "binary");
+        }
+        reader.readAsBinaryString(img);
+    }
 
     let newCard = document.createElement(`div`);
     newCard.id = lastSerialNumber;
     newCard.className="card box-edge moveable";
     newCard.innerHTML +=`
         <div class="card-flag"></div>
+        <div class="card-img">
+        </div>
         <div class="card-text">${text}</div>
-        <div class="card-time">${readTime(lastSerialNumber)}</div>
+        <div class="card-time"></div>
         <div class="card-detail"></div>
+        <div class="card-time"></div>
         <div class="card-button">
             <button onclick="makeCardDetail(thisCardPath+'/'+this.parentElement.parentElement.id)">
                 + Deatil
@@ -200,8 +238,10 @@ function loadCardDetail(cardPath = "main", quit = false){
     thisCardPath = cardPath;
     let cardSerial;
     if (cardPath == "main") {
+        cardView.classList.add("main");
         cardSerial = "";
     } else {
+        cardView.classList.remove("main");
         cardSerial = cardPath.substring(cardPath.lastIndexOf("/")+1,cardPath.length);
     }
     cardContainer.innerHTML ="";    
@@ -255,6 +295,7 @@ function makeCardElement(cardPath){
     card.className=`card box-edge moveable`;
         card.innerHTML +=`
         <div class="card-flag"></div>
+        <div class="card-img"></div>
         <div class="card-text ${isDir ? "dir":""}">${text}</div>
         <div class="card-time">${readTime(card.id)}</div>
         <div class="card-detail"></div>
@@ -265,7 +306,7 @@ function makeCardElement(cardPath){
         </div>`;
     setCardDragAndDrop(card);
     if(isDir){
-        let detail = card.children[3];
+        let detail = card.children[4];
         let childFilenames = fs.readdirSync(cardPath);
         for (let i = 0; i < childFilenames.length; i++) {
             if(childFilenames[i] == "order.txt"){
@@ -299,69 +340,89 @@ function sortOrder(cardPath){
     console.log(order);
     if (order.length != 2){
         for (let i = 0; i < order.length-1; i++) {
-            document.getElementById(order[i]).style.order = i+1;
+            document.getElementById(order[i]).style.order = i;
         }
     }
 }
 function setCardDragAndDrop(card) {
     var state = false; 
+    let cards;
+    let cardOrder;
+    let nearest = {dist:10000000};
+    let poses = [];
     card.addEventListener("mousedown",(event)=>{
         if ((event.buttons%2 == 1) && !state) {
             state = true; 
+            cardRect = card.getBoundingClientRect();
+            cards = document.getElementsByClassName("moveable");
+            for (let i = 0; i < cards.length; i++) {
+                let pos = cards[i].getBoundingClientRect();
+                poses[cards[i].style.order*1] = {x:pos.x, y:pos.y};
+            } 
         }
     });
     window.addEventListener("mousemove",(event)=>{
         if (state) {
             card.style.left =`${parseFloat(card.style.left)+event.movementX}px`;
             card.style.top =`${parseFloat(card.style.top)+event.movementY}px`;   
+
+            nearest = {dist:10000000};
+            let tmpCards = [];
+            cardOrder = card.style.order*1;
+            for (let i = 0; i < cards.length; i++) {
+                tmpCards[cards[i].style.order*1] = cards[i];
+            }
+            cards = tmpCards;
+            let cardRect = card.getBoundingClientRect();
+            for (let i = 0; i < cards.length; i++) {
+                let distance = Math.sqrt((poses[i].x-cardRect.x)*(poses[i].x-cardRect.x)+(poses[i].y-cardRect.y)*(poses[i].y-cardRect.y));
+                
+                if (nearest.dist > distance){
+                    nearest = {dist: distance, id: i};
+                }
+            }
+            nearest = nearest.id;
+            if (nearest != cardOrder) {
+                let updown = cardOrder < nearest ? 1:-1;
+                let cardOffset = {x: poses[cardOrder].x - poses[nearest].x, y: poses[cardOrder].y - poses[nearest].y};
+                card.style.order = nearest;
+                cards[nearest].style.order = cards[nearest].style.order*1 - updown;
+                for (let i = cardOrder+updown; i != nearest; i+=updown) {
+                    cards[i].style.order = cards[i].style.order*1 - updown;
+                }
+                card.style.left =`${parseFloat(card.style.left)+ cardOffset.x}px`;
+                card.style.top =`${parseFloat(card.style.top)+ cardOffset.y}px`;   
+            }
         }
     });
     window.addEventListener("mouseup",(event)=>{
         if ((event.buttons%2 == 0) && state) {
+            poses = [];
             state = false; 
-            let cardLeft = Math.round(parseFloat(card.style.left));
-            let cardTop = Math.round(parseFloat(card.style.top));
-            card.style.left =`${cardLeft}px`;
-            card.style.top =`${cardTop}px`;
+            card.style.left ="";
+            card.style.top ="";
         }
     });
 }
 var start = false;
-function setAllCardDraggable(startValue){
+function setAllCardDraggable(){
     if (thisCardPath != "main") {
-
-        if (startValue) {
+        start = !start;
+        if (start) {
             cardContainer.parentElement.parentElement.classList.add("editing");
         }else{
             cardContainer.parentElement.parentElement.classList.remove("editing");
         }
         let cards = document.getElementsByClassName("moveable");
-        start = startValue;
-        if (start) {
+        
+        if(start){
             for (let i = 0; i < cards.length; i++) {
-                cards[i].style.left ="0px";
-                cards[i].style.top ="0px";
+                cards[i].style.left="0px";
+                cards[i].style.top="0px";
             }
         }
         else
         {
-            let xPos2Id = {}
-            let xPoses =[];
-            for (let i = 0; i < cards.length; i++) {
-                xPoses[i] = cards[i].getBoundingClientRect().left;
-                xPos2Id[xPoses[i]+""] = cards[i].id;
-            }
-            xPoses.sort(function(a, b){return a - b});
-            let text = "";
-            for (let i = 0; i < xPoses.length; i++) {
-                text += xPos2Id[xPoses[i]+''];
-                text += "-";
-            }
-            fs.writeFileSync(thisCardPath+"/order.txt",text);
-            for (let i = 0; i < cards.length; i++) {
-                cards[i].style.left ="";
-                cards[i].style.top ="";
-            }
             sortOrder(thisCardPath+"/order.txt");
         }
     }

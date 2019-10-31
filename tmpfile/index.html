@@ -78,10 +78,25 @@
                 <button onclick="quitDetail()">
                     Quit
                 </button>
-                <button style="width: 3rem; height: 3rem; font-weight:900; font-size: 2rem;" onclick=" if(thisCardPath != 'main'){ start = !start;} setAllCardDraggable(start);">~</button>
+                <button style="width: 3rem; height: 3rem; font-weight:900; font-size: 2rem;" onclick="setAllCardDraggable();">
+                    ~
+                </button>
             </div>
             <div style="height: calc(100% - 4rem);">
                 <div id="card-container">
+
+                </div>
+            </div>
+        </div>
+        <div id="time-view" class="hide">
+            <div>
+                projectName
+            </div>
+            <div>
+                <div>
+                    times
+                </div>
+                <div>
 
                 </div>
             </div>

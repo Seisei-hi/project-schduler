@@ -3,13 +3,19 @@
   "version": "1.0.0",
   "description": "Second Test",
   "main": "main.js",
-  "dependencies": {
-    "electron": "^7.0.0"
+  "devDependencies": {
+    "electron": "^7.0.0",
+    "electron-builder": "^22.1.0"
   },
-  "devDependencies": {},
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "build": {
+    "productName": "Project Scheduler",
+    "appId": "Project-Scheduler"
+  }
 }

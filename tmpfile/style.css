@@ -93,8 +93,16 @@ body {
 #card-container{
     width: 100%;
     display: flex; 
-    flex-direction: row;
-    flex-wrap: wrap;}
+    flex-direction: row;}
+#card-container.main{
+    flex-wrap: wrap;
+    flex-direction: column;}
+#card-view.editing{
+    background-color:darkred;}
+.main > .card{
+    width: 20rem;
+    min-width: 20rem;
+}
 .card{
     background-color: white;
     width: 15rem;
@@ -103,9 +111,14 @@ body {
     margin: 0.6rem;
     box-sizing: border-box;
     height: fit-content;}
-.card-parent{
-}
-.card-label{
+.card > div{
+        margin-top: 0.2rem;
+    }
+.card-img{
+    max-height: 10rem;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background-color: rgba(0, 0, 0, 0.1);
 }
 .card-text{
     width: 100%;}
@@ -128,12 +141,12 @@ body {
     overflow-y: auto;
     overflow-x: hidden;
     background-color: skyblue;}
-.card-detail > div{
+.card-detail >.card{
     min-width: unset;
     width: calc(100% - 0.6rem);
     margin: 0.1rem 0 0.1rem 0.3rem;}
-.card-button{
-    margin-top: 0.3rem ;}
+.card-detail >.card>div{
+    margin: 0;}
 .card-text[contenteditable=true]:empty:before{
     content: attr(placeholder);
     color: darkgray;
