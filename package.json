@@ -4,7 +4,7 @@
   "description": "Second Test",
   "main": "main.js",
   "dependencies": {
-    "electron": "^7.0.0"
+    "electron": "^7.2.4"
   },
   "devDependencies": {},
   "scripts": {
